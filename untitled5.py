@@ -22,8 +22,8 @@ def main():
     # Load the trained model and encoder
     @st.cache_resource
     def load_model():
-        model_path = r"C:\users\gmaina\Downloads\trained_model.sav"
-        encoder_path = r"C:\users\gmaina\encoder.sav"
+        model_path = "trained_model.sav"
+        encoder_path = "encoder.sav"
         with open(model_path, 'rb') as model_file:
             loaded_model = pickle.load(model_file)
         with open(encoder_path, 'rb') as encoder_file:

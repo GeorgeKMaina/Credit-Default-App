@@ -22,8 +22,8 @@ def main():
     # Load the trained model and encoder dictionary
     @st.cache_resource
     def load_model():
-        model_path = trained_model.sav
-        encoder_path = encoder.sav
+        model_path = "https://github.com/GeorgeKMaina/Credit-Default-App/blob/main/trained_model.sav"
+        encoder_path = "https://github.com/GeorgeKMaina/Credit-Default-App/blob/main/encoder.sav"
         with open(model_path, 'rb') as model_file:
             loaded_model = pickle.load(model_file)
         with open(encoder_path, 'rb') as encoder_file:

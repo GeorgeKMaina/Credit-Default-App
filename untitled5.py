@@ -19,18 +19,18 @@ def main():
     Please fill in the details below and click **Predict** to see the result.
     """)
     
-    # Load the trained model and encoder
+    # Load the trained model and encoder dictionary
     @st.cache_resource
     def load_model():
-        model_path = "trained_model.sav"
-        encoder_path = "encoder.sav"
+        model_path = r"C:\users\gmaina\Downloads\trained_model.sav"
+        encoder_path = r"C:\users\gmaina\encoder.sav"
         with open(model_path, 'rb') as model_file:
             loaded_model = pickle.load(model_file)
         with open(encoder_path, 'rb') as encoder_file:
-            encoder = pickle.load(encoder_file)
-        return loaded_model, encoder
+            encoder_dict = pickle.load(encoder_file)  # Load as a dictionary of encoders
+        return loaded_model, encoder_dict
     
-    loaded_model, encoder = load_model()
+    loaded_model, encoder_dict = load_model()
     
     # Define selection options
     months_of_year = (
@@ -130,7 +130,9 @@ def main():
     
     # Encoding categorical variables
     try:
-        input_df_encoded = encoder.transform(input_df)
+        input_df_encoded = input_df.copy()
+        for column, enc in encoder_dict.items():  # Loop over each column and encoder
+            input_df_encoded[column] = enc.transform(input_df[column])
     except Exception as e:
         st.error(f"Error in encoding input data: {e}")
         return

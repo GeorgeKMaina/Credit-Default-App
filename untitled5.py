@@ -21,7 +21,7 @@ def main():
     
     # Load the trained model and encoder dictionary
     @st.cache_resource
-    import pickle
+
 import urllib.request
 
 @st.cache_resource

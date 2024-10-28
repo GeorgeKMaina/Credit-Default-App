@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
 
 def main():
-    st.title("Credit Default Prediction App")
+    st.title("Insurance Fraud Prediction")
     st.write("""
     This application predicts whether a customer will default on their credit based on the provided information.
     Please fill in the details below and click **Predict** to see the result.
@@ -21,14 +21,28 @@ def main():
     
     # Load the trained model and encoder dictionary
     @st.cache_resource
-    def load_model():
-        model_path = "https://github.com/GeorgeKMaina/Credit-Default-App/blob/main/trained_model.sav"
-        encoder_path = "https://github.com/GeorgeKMaina/Credit-Default-App/blob/main/encoder.sav"
-        with open(model_path, 'rb') as model_file:
-            loaded_model = pickle.load(model_file)
-        with open(encoder_path, 'rb') as encoder_file:
-            encoder_dict = pickle.load(encoder_file)  # Load as a dictionary of encoders
-        return loaded_model, encoder_dict
+    import pickle
+import urllib.request
+
+@st.cache_resource
+def load_model():
+    # GitHub URLs for trained_model.sav and encoder.sav
+    model_url = "https://github.com/GeorgeKMaina/Credit-Default-App/raw/main/trained_model.sav"
+    encoder_url = "https://github.com/GeorgeKMaina/Credit-Default-App/raw/main/encoder.sav"
+    
+    # Download and save the model file
+    model_file = "trained_model.sav"
+    encoder_file = "encoder.sav"
+    urllib.request.urlretrieve(model_url, model_file)
+    urllib.request.urlretrieve(encoder_url, encoder_file)
+    
+    # Load the model and encoder dictionary
+    with open(model_file, 'rb') as file:
+        loaded_model = pickle.load(file)
+    with open(encoder_file, 'rb') as file:
+        encoder_dict = pickle.load(file)  # Load as a dictionary of encoders
+    
+    return loaded_model, encoder_dict
     
     loaded_model, encoder_dict = load_model()
     

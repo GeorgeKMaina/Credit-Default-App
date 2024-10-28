@@ -9,21 +9,10 @@ import numpy as np
 import pandas as pd
 import pickle
 import streamlit as st
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import LabelEncoder
-
-def main():
-    st.title("Insurance Fraud Prediction")
-    st.write("""
-    This application predicts whether a customer will default on their credit based on the provided information.
-    Please fill in the details below and click **Predict** to see the result.
-    """)
-    
-    # Load the trained model and encoder dictionary
-    @st.cache_resource
-
 import urllib.request
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 
+# Define the function to load the model and encoder dictionary
 @st.cache_resource
 def load_model():
     # GitHub URLs for trained_model.sav and encoder.sav
@@ -43,19 +32,26 @@ def load_model():
         encoder_dict = pickle.load(file)  # Load as a dictionary of encoders
     
     return loaded_model, encoder_dict
+
+# Main app function
+def main():
+    st.title("Insurance Fraud Prediction")
+    st.write("""
+    This application predicts whether a customer will default on their credit based on the provided information.
+    Please fill in the details below and click **Predict** to see the result.
+    """)
     
+    # Load the trained model and encoder dictionary
     loaded_model, encoder_dict = load_model()
     
-    # Define selection options
+    # Define selection options for user inputs
     months_of_year = (
         "January", "February", "March", "April", "May", "June", 
         "July", "August", "September", "October", "November", "December"
     )
-    
     days_of_week = (
         "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
     )
-    
     AccidentArea = ("Urban", "Rural")
     Sex = ("Male", "Female")
     Marital_status = ('Single', 'Married', 'Widow', 'Divorced')

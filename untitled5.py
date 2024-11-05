@@ -35,10 +35,9 @@ def load_model():
 
 # Main app function
 def main():
-    st.title("Insurance Fraud Prediction")
+    st.title("Auto Insurance Fraud Prediction")
     st.write("""
-    This application predicts whether a customer will default on their credit based on the provided information.
-    Please fill in the details below and click **Predict** to see the result.
+    This application will predict whether an auto insuarance claim is fraudulent or genuine based on the provided information. Please fill in the details below and click predict to see the result.
     """)
     
     # Load the trained model and encoder dictionary

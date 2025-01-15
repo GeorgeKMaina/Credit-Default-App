@@ -173,7 +173,7 @@ def main():
                     input_df_encoded[column] = enc.transform(input_df[column])
         
         print("Encoding successful!")
-        print(input_df_encoded)
+        #print(input_df_encoded)
 
     except Exception as e:
         print(f"Error in encoding input data: {e}")

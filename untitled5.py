@@ -16,20 +16,22 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 @st.cache_resource
 def load_model():
     # GitHub URLs for trained_model.sav and encoder.sav
-    model_url = "https://github.com/GeorgeKMaina/Credit-Default-App/raw/main/trained_model.sav"
-    encoder_url = "https://github.com/GeorgeKMaina/Credit-Default-App/raw/main/encoder.sav"
+    #model_url = "https://github.com/GeorgeKMaina/Credit-Default-App/raw/main/trained_model.sav"
+    #encoder_url = "https://github.com/GeorgeKMaina/Credit-Default-App/raw/main/encoder.sav"
     
     # Download and save the model file
     model_file = "trained_model.sav"
     encoder_file = "encoder.sav"
-    urllib.request.urlretrieve(model_url, model_file)
-    urllib.request.urlretrieve(encoder_url, encoder_file)
+    #urllib.request.urlretrieve(model_url, model_file)
+    #urllib.request.urlretrieve(encoder_url, encoder_file)
     
     # Load the model and encoder dictionary
     with open(model_file, 'rb') as file:
         loaded_model = pickle.load(file)
+        
     with open(encoder_file, 'rb') as file:
         encoder_dict = pickle.load(file)  # Load as a dictionary of encoders
+    #st.write("Encoder dictionary keys:", encoder_dict.keys())
     
     return loaded_model, encoder_dict
 
@@ -75,15 +77,19 @@ def main():
         'Acura', 'Dodge', 'Mercury', 'Jaguar', 'Nissan', 'VW', 
         'Saab', 'Saturn', 'Porsche', 'BMW', 'Mercedes', 'Ferrari', 'Lexus'
     )
-    
+    BasePolicy = ('Liability', 'Collision', 'All Perils')
+    Fault = ('Third Party', 'Policy Holder')
+    Year = ('1994', '1995', '1996')
     # Collect user inputs
     st.subheader("Policy Information")
-    PolicyNumber = st.text_input("Customer Policy Number")
+    RepNumber = st.text_input("Customer Policy Number")
     Policy_type_selected = st.selectbox('Policy Type', Policy_type)
     Days_Policy_Accident_selected = st.selectbox('Days Since Policy Accident', Days_Policy_Accident)
     Days_Policy_Claim_selected = st.selectbox('Days Since Policy Claim', Days_Policy_Claim)
     AddressChange_Claim_selected = st.selectbox('Address Change Since Claim', AddressChange_Claim)
     AgentType_selected = st.selectbox('Agent Type', AgentType)
+    BasePolicy_selected = st.selectbox('Base of Policy', BasePolicy)
+    Fault_selected = st.selectbox('Type of Faulty', Fault)
     
     st.subheader("Vehicle Information")
     Make_selected = st.selectbox('Vehicle Make', Make)
@@ -99,7 +105,8 @@ def main():
     PoliceReportFiled_selected = st.selectbox('Police Report Filed', PoliceReportFiled)
     WitnessPresent_selected = st.selectbox('Witness Present', WitnessPresent)
     Month_selected = st.selectbox('Month of Accident', months_of_year)
-    Weekday_selected = st.selectbox('Day of Accident', days_of_week)
+    #Weekday_selected = st.selectbox('Day of Accident', days_of_week)
+    Year_selected = st.selectbox('Year of Accident', Year)
     
     st.subheader("Customer Information")
     Sex_selected = st.selectbox('Gender', Sex)
@@ -110,57 +117,87 @@ def main():
     
     # Prepare input data for prediction
     input_data = {
-        'PolicyNumber': PolicyNumber,
-        'PolicyType': Policy_type_selected,
-        'DaysPolicyAccident': Days_Policy_Accident_selected,
-        'DaysPolicyClaim': Days_Policy_Claim_selected,
-        'AddressChangeClaim': AddressChange_Claim_selected,
-        'AgentType': AgentType_selected,
-        'VehicleMake': Make_selected,
-        'VehicleCategory': VehicleCategory_selected,
-        'VehiclePrice': VehiclePrice_selected,
-        'AgeOfVehicle': AgeOfVehicle_selected,
-        'NumberOfVehicles': NumberOfCars_selected,
-        'Deductible': Deductible_selected,
-        'DriverRating': DriverRating_selected,
         'AccidentArea': AccidentArea_selected,
+        'Sex': Sex_selected,
+        'MaritalStatus': Marital_status_selected,
+        'Fault': Fault_selected,
+        'PolicyType': Policy_type_selected,
+        'VehicleCategory': VehicleCategory_selected,
+        'Make': Make_selected,
+        'DriverRating': DriverRating_selected,
+        'Days_Policy_Accident': Days_Policy_Accident_selected,
+        'Days_Policy_Claim': Days_Policy_Claim_selected,
         'PoliceReportFiled': PoliceReportFiled_selected,
         'WitnessPresent': WitnessPresent_selected,
-        'Month': Month_selected,
-        'Weekday': Weekday_selected,
-        'Gender': Sex_selected,
-        'MaritalStatus': Marital_status_selected,
-        'AgeOfPolicyHolder': AgeOfPolicyHolder_selected,
+        'VehiclePrice': VehiclePrice_selected,
+        'AgentType': AgentType_selected,
+        'AddressChange_Claim': AddressChange_Claim_selected,
         'PastNumberOfClaims': PastNumberOfClaims_selected,
-        'NumberOfSuppliments': NumberOfSuppliments_selected
-    }
+        'NumberOfSuppliments': NumberOfSuppliments_selected,
+        'NumberOfCars': NumberOfCars_selected,
+        'Year': Year_selected,
+        'BasePolicy': BasePolicy_selected,
+        'Month': Month_selected,
+        'AgeOfVehicle': AgeOfVehicle_selected,
+        'AgeOfPolicyHolder': AgeOfPolicyHolder_selected,
+        'RepNumber': RepNumber,
+        'Deductible': Deductible_selected,
+        #'Weekday': Weekday_selected,
+        
+}
     
     input_df = pd.DataFrame([input_data])
-    
+
+
     # Encoding categorical variables
     try:
         input_df_encoded = input_df.copy()
-        for column, enc in encoder_dict.items():  # Loop over each column and encoder
-            input_df_encoded[column] = enc.transform(input_df[column])
+
+        for column, enc in encoder_dict.items():
+            if column in input_df.columns:
+                try:
+                    # Ensure the column is a pandas Series
+                    if isinstance(input_df[column].iloc[0], list):
+                        input_df[column] = pd.Series(input_df[column].iloc[0])
+                    
+                    # Transform the column using the encoder
+                    input_df_encoded[column] = enc.transform(input_df[column])
+
+                except ValueError:  # If unseen labels are found
+                    # Convert column to pandas Series if it's a list
+                    if isinstance(input_df[column].iloc[0], list):
+                        input_df[column] = pd.Series(input_df[column].iloc[0])
+
+                    # Re-fit the encoder on the new data (including unseen labels)
+                    enc.fit(input_df[column])
+                    input_df_encoded[column] = enc.transform(input_df[column])
+        
+        print("Encoding successful!")
+        print(input_df_encoded)
+
     except Exception as e:
-        st.error(f"Error in encoding input data: {e}")
-        return
+        print(f"Error in encoding input data: {e}")
+
+
+
     
     # Make prediction
     if st.button("Predict"):
-        prediction = loaded_model.predict(input_df_encoded)
-        prediction_proba = loaded_model.predict_proba(input_df_encoded)
-        
-        if prediction[0] == 1:
-            result = 'Default'
-            confidence = prediction_proba[0][1] * 100
-        else:
-            result = 'No Default'
-            confidence = prediction_proba[0][0] * 100
-        
-        st.success(f"Prediction: **{result}**")
-        st.info(f"Confidence: **{confidence:.2f}%**")
-    
+        try:
+            prediction = loaded_model.predict(input_df_encoded)
+            prediction_proba = loaded_model.predict_proba(input_df_encoded)
+            
+            if prediction[0] == 1:
+                result = 'Default'
+                confidence = prediction_proba[0][1] * 100
+            else:
+                result = 'No Default'
+                confidence = prediction_proba[0][0] * 100
+            
+            st.success(f"Prediction: **{result}**")
+            st.info(f"Confidence: **{confidence:.2f}%**")
+        except Exception as e:
+            st.error(f"Error in prediction: {e}")
     st.write("---")
     st.write("Developed by [Your Name]")
 

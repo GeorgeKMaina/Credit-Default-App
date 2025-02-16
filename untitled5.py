@@ -183,7 +183,7 @@ def main():
 
 
     # Retrieve the optimized recall threshold (use default if missing)
-    RECALL_THRESHOLD = max(0.05, getattr(loaded_model, 'optimal_threshold', 0.55))  # Ensure threshold is reasonable
+    RECALL_THRESHOLD = getattr(loaded_model, 'optimal_threshold', 0.55)  # Default to 0.55s if not found
 
     # Make prediction
     if st.button("Predict"):
@@ -197,25 +197,35 @@ def main():
             # Apply recall-optimized threshold
             prediction = (prediction_proba >= RECALL_THRESHOLD).astype(int)  # Ensure it's an integer output
 
-            # Adjust Likelihood calculation with better scaling
+            # Adjust Likelihood calculation
             if prediction[0] == 1:  # Predicted as 'Default'
                 result = 'Default'
-                likelihood = ((prediction_proba[0] - RECALL_THRESHOLD) / (1 - RECALL_THRESHOLD)) * 75 + 25  # Scale better
-                explanation = "The model predicts a HIGH RISK of default based on past patterns."
+                likelihood = prediction_proba[0] * 100
+                st.success(f"**Prediction: {result}**")
+                st.info(f"🔴 **Likelihood of Fraud:** {likelihood:.2f}%")
+                st.warning("⚠️ The model suggests this claim has a high risk of being fraudulent. Further investigation is recommended before processing.")
+
             else:  # Predicted as 'No Default'
                 result = 'No Default'
-                likelihood = ((1 - prediction_proba[0]) / (1 - RECALL_THRESHOLD)) * 75  # Scale properly
-                explanation = "The model predicts a LOW RISK of default, meaning repayment is likely."
+                likelihood = (1 - prediction_proba[0]) * 100
+                st.success(f"**Prediction: {result}**")
+                st.info(f"🟢 **Likelihood of Fraud:** {likelihood:.2f}%")
+                st.success("✅ This claim appears genuine based on the provided details. However, always cross-check with policy records.")
 
-            # Ensure likelihood stays within a valid range (0-100)
+
+            # Ensure likelihood is within valid range
             likelihood = max(0, min(likelihood, 100))
 
-            # Display results in a non-technical way
-            st.success(f"**Prediction: {result}**")
-            st.info(f"**Risk Level: {likelihood:.2f}%** - {explanation}")
+            # Debugging: Print raw probability values
+            #st.write(f"Raw Probability: {prediction_proba[0]:.4f}")
+            #st.write(f"Threshold Used: {RECALL_THRESHOLD:.3f}")
 
+            # Display results
+            #st.success(f"Prediction: **{result}**")
+            #st.info(f"Likelihood: **{likelihood:.2f}%**")
         except Exception as e:
             st.error(f"Error in prediction: {e}")
+
     st.write("---")
     st.write("Developed by [Your Name]")
 

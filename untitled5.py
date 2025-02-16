@@ -11,29 +11,30 @@ import pickle
 import streamlit as st
 import urllib.request
 from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import precision_recall_curve
+
 
 # Define the function to load the model and encoder dictionary
 @st.cache_resource
 def load_model():
-    # GitHub URLs for trained_model.sav and encoder.sav
-    #model_url = "https://github.com/GeorgeKMaina/Credit-Default-App/raw/main/trained_model.sav"
-    #encoder_url = "https://github.com/GeorgeKMaina/Credit-Default-App/raw/main/encoder.sav"
-    
-    # Download and save the model file
-    model_file = "trained_model.sav"
+    # Define file names
+    model_file = "optimized_model.pkl"
+    scaler_file = "scaler.pkl"  # Separate scaler file
     encoder_file = "encoder.sav"
-    #urllib.request.urlretrieve(model_url, model_file)
-    #urllib.request.urlretrieve(encoder_url, encoder_file)
-    
-    # Load the model and encoder dictionary
+
+    # Load the model
     with open(model_file, 'rb') as file:
         loaded_model = pickle.load(file)
-        
+
+    # Load the scaler
+    with open(scaler_file, 'rb') as file:
+        scaler = pickle.load(file)
+
+    # Load the encoder dictionary
     with open(encoder_file, 'rb') as file:
         encoder_dict = pickle.load(file)  # Load as a dictionary of encoders
-    #st.write("Encoder dictionary keys:", encoder_dict.keys())
-    
-    return loaded_model, encoder_dict
+
+    return loaded_model, scaler, encoder_dict
 
 # Main app function
 def main():
@@ -43,7 +44,7 @@ def main():
     """)
     
     # Load the trained model and encoder dictionary
-    loaded_model, encoder_dict = load_model()
+    loaded_model, scaler, encoder_dict = load_model()
     
     # Define selection options for user inputs
     months_of_year = (
@@ -173,29 +174,46 @@ def main():
                     input_df_encoded[column] = enc.transform(input_df[column])
         
         print("Encoding successful!")
-        #print(input_df_encoded)
+        print(input_df_encoded)
 
     except Exception as e:
         print(f"Error in encoding input data: {e}")
 
 
 
-    
+
+    # Retrieve the optimized recall threshold (use default if missing)
+    RECALL_THRESHOLD = max(0.05, getattr(loaded_model, 'optimal_threshold', 0.55))  # Ensure threshold is reasonable
+
     # Make prediction
     if st.button("Predict"):
         try:
-            prediction = loaded_model.predict(input_df_encoded)
-            prediction_proba = loaded_model.predict_proba(input_df_encoded)
-            
-            if prediction[0] == 1:
+            # Apply scaling before prediction
+            input_df_scaled = scaler.transform(input_df_encoded)
+
+            # Get probability of default
+            prediction_proba = loaded_model.predict_proba(input_df_scaled)[:, 1]
+
+            # Apply recall-optimized threshold
+            prediction = (prediction_proba >= RECALL_THRESHOLD).astype(int)  # Ensure it's an integer output
+
+            # Adjust Likelihood calculation with better scaling
+            if prediction[0] == 1:  # Predicted as 'Default'
                 result = 'Default'
-                confidence = prediction_proba[0][1] * 100
-            else:
+                likelihood = ((prediction_proba[0] - RECALL_THRESHOLD) / (1 - RECALL_THRESHOLD)) * 75 + 25  # Scale better
+                explanation = "The model predicts a HIGH RISK of default based on past patterns."
+            else:  # Predicted as 'No Default'
                 result = 'No Default'
-                confidence = prediction_proba[0][0] * 100
-            
-            st.success(f"Prediction: **{result}**")
-            st.info(f"Confidence: **{confidence:.2f}%**")
+                likelihood = ((1 - prediction_proba[0]) / (1 - RECALL_THRESHOLD)) * 75  # Scale properly
+                explanation = "The model predicts a LOW RISK of default, meaning repayment is likely."
+
+            # Ensure likelihood stays within a valid range (0-100)
+            likelihood = max(0, min(likelihood, 100))
+
+            # Display results in a non-technical way
+            st.success(f"**Prediction: {result}**")
+            st.info(f"**Risk Level: {likelihood:.2f}%** - {explanation}")
+
         except Exception as e:
             st.error(f"Error in prediction: {e}")
     st.write("---")

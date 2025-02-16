@@ -197,19 +197,20 @@ def main():
             # Apply recall-optimized threshold
             prediction = (prediction_proba >= RECALL_THRESHOLD).astype(int)  # Ensure it's an integer output
 
-            # Adjust Likelihood calculation
-            if prediction[0] == 1:  # Predicted as 'Default'
-                result = 'Default'
-                likelihood = prediction_proba[0] * 100
+            # Adjust Likelihood Calculation
+            likelihood = prediction_proba[0] * 100  # Always use fraud probability
+
+            if prediction[0] == 1:  # Predicted as 'Fraudulent Claim'
+                result = 'Fraudulent Claim'
                 st.success(f"**Prediction: {result}**")
-                st.info(f"🔴 **Likelihood of Fraud:** {likelihood:.2f}%")
+                st.info(f"🔴 **Fraud Risk: {likelihood:.2f}%**")
                 st.warning("⚠️ The model suggests this claim has a high risk of being fraudulent. Further investigation is recommended before processing.")
 
-            else:  # Predicted as 'No Default'
-                result = 'No Default'
-                likelihood = (1 - prediction_proba[0]) * 100
+            else:  # Predicted as 'Genuine Claim'
+                result = 'Genuine Claim'
+                fraud_safety = (100 - likelihood)  # Reverse fraud risk to show safety %
                 st.success(f"**Prediction: {result}**")
-                st.info(f"🟢 **Likelihood of Fraud:** {likelihood:.2f}%")
+                st.info(f"🟢 **Confidence in Claim Being Genuine: {fraud_safety:.2f}%**")
                 st.success("✅ This claim appears genuine based on the provided details. However, always cross-check with policy records.")
 
 
